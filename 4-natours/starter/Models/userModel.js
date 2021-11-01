@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -38,6 +39,8 @@ const userSchema = new mongoose.Schema({
         },
     },
     passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpired: Date,
 });
 
 userSchema.pre('save', async function (next) {
@@ -50,6 +53,15 @@ userSchema.pre('save', async function (next) {
 
     // deleting the field
     this.passwordConfirm = undefined; // passwordConfirm is required (required to input, not to persist)
+    next();
+});
+
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password') || this.isNew) {
+        return next();
+    }
+
+    this.passwordChangedAt = Date.now() - 1000; // subtract 1s because creating jwt takes time, to ensure token is always created after the password is changed
     next();
 });
 
@@ -72,6 +84,21 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 
     // false --> not changed
     return false;
+};
+
+userSchema.methods.createPasswordResetToken = function () {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    this.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+    console.log({ resetToken }, this.passwordResetToken);
+
+    this.passwordResetExpired = Date.now() + 10 * 60 * 1000;
+
+    return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);
