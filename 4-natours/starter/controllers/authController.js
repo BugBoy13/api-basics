@@ -1,3 +1,4 @@
+const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../Models/userModel');
 const AppError = require('../utils/appError');
@@ -20,6 +21,8 @@ exports.signup = catchAsync(async (req, res) => {
         email: req.body.email,
         password: req.body.password,
         passwordConfirm: req.body.passwordConfirm,
+        passwordChangedAt: req.body.passwordChangedAt,
+        role: req.body.role,
     });
 
     const token = signToken(newUser._id);
@@ -58,3 +61,55 @@ exports.login = catchAsync(async (req, res, next) => {
         token,
     });
 });
+
+exports.protect = catchAsync(async (req, res, next) => {
+    // 1. Getting token and check if exists
+
+    let token;
+    if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer')
+    ) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+        return next(new AppError('You are not logged in.', 401));
+    }
+
+    // 2. Verifying the token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+    // 3. Check if user still exists
+    const freshUser = await User.findById(decoded.id);
+    if (!freshUser) {
+        return next(new AppError('The user no longer exists', 401));
+    }
+
+    // 4. Check if user changed password after token was issued
+    if (freshUser.changedPasswordAfter(decoded.iat)) {
+        return next(new AppError('User changed password', 401));
+    }
+
+    // GRANT ACCESS TO PROTECTED ROUTE
+    req.user = freshUser;
+    next();
+});
+
+// Middleware for passing argument
+exports.restrictTo =
+    (...roles) =>
+    (req, res, next) => {
+        // roles is an array ['admin', 'lead-guide']
+
+        if (!roles.includes(req.user.role)) {
+            return next(
+                new AppError(
+                    'You do not have permission to perform this action',
+                    403
+                )
+            );
+        }
+
+        next();
+    };

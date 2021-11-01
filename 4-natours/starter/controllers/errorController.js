@@ -13,11 +13,14 @@ const handleDuplicateFieldDB = (err) => {
 
 const handleValidationErrorDB = (err) => {
     const errors = Object.values(err.errors.map((val) => val.message));
-    console.log('errors', errors);
 
     const message = `Invalid input data: ${errors.join(`. `)}`;
     return new AppError(message, 400);
 };
+
+const handleJWTError = (err) => new AppError('Invalid token', 401);
+
+const handleJWTExpiredError = (err) => new AppError('Token expired', 401);
 
 const sendDevError = (error, res) => {
     res.status(error.statusCode).json({
@@ -37,8 +40,6 @@ const sendProdError = (error, res) => {
         });
     } else {
         // Programming or other unknown error: dont leak error details
-        console.error(error);
-
         res.status(500).json({
             status: 'error',
             message: 'Something went wrong',
@@ -60,6 +61,9 @@ module.exports = (err, req, res, next) => {
         if (error.name === 'ValidatorError')
             // condition is always false
             error = handleValidationErrorDB(error);
+        if (error.name === 'JsonWebTokenError') error = handleJWTError(error);
+        if (error.name === 'TokenExpiredError')
+            error = handleJWTExpiredError(error);
 
         sendProdError(error, res);
     }
