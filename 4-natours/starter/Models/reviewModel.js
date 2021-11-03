@@ -58,7 +58,7 @@ reviewSchema.pre(/^find/, function (next) {
     // });
     this.populate({
         path: 'user',
-        select: 'name phone',
+        select: 'name photo',
     });
     next();
 });
