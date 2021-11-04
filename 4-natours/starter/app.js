@@ -44,7 +44,15 @@ app.use(
         limit: '10kb',
     })
 );
+// To get the cookie data
 app.use(cookieParser());
+// To get the form data
+app.use(
+    express.urlencoded({
+        extended: true,
+        limit: '10kb',
+    })
+);
 
 // Data sanitization against NoSQL Query injection
 app.use(mongoSanitize());
@@ -72,7 +80,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Test middleware
 app.use((req, res, next) => {
-    console.log(req.cookies);
+    // console.log(req.cookies);
     next();
 });
 

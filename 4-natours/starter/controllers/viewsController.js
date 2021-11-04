@@ -1,4 +1,5 @@
 const Tour = require('../Models/tourModel');
+const User = require('../Models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -23,9 +24,9 @@ exports.getTour = catchAsync(async (req, res, next) => {
         fields: 'review rating user',
     });
 
-    // if (!tour) {
-    //     return next(new AppError('There is no tour with that name', 404));
-    // }
+    if (!tour) {
+        return next(new AppError('There is no tour with that name', 404));
+    }
 
     // 2. Build template
     // 3. Render template using the data
@@ -51,3 +52,38 @@ exports.getLoginForm = (req, res) => {
             title: 'Login',
         });
 };
+
+exports.getAccount = (req, res) => {
+    res.status(200)
+        .set(
+            'Content-Security-Policy',
+            "default-src 'self' ;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src https://cdnjs.cloudflare.com 'self' blob: ;script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests;"
+        )
+        .render('account', {
+            title: 'Your account',
+        });
+};
+
+exports.updateUserData = catchAsync(async (req, res, next) => {
+    const updatedUser = await User.findByIdAndUpdate(
+        req.user.id,
+        {
+            name: req.body.name,
+            email: req.body.email,
+        },
+        {
+            new: true, // get new object
+            runValidators: true,
+        }
+    );
+
+    res.status(200)
+        .set(
+            'Content-Security-Policy',
+            "default-src 'self' ;base-uri 'self';block-all-mixed-content;font-src 'self' https: data:;frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src https://cdnjs.cloudflare.com 'self' blob: ;script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests;"
+        )
+        .render('account', {
+            title: 'Your account',
+            user: updatedUser,
+        });
+});
