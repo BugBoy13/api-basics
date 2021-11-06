@@ -3,7 +3,7 @@ const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../Models/userModel');
 const AppError = require('../utils/appError');
-const sendEmail = require('../utils/email');
+const Email = require('../utils/email');
 const catchAsync = require('../utils/catchAsync');
 
 const signToken = (id) =>
@@ -53,6 +53,9 @@ exports.signup = catchAsync(async (req, res) => {
         passwordChangedAt: req.body.passwordChangedAt,
         role: req.body.role,
     });
+
+    const url = `${req.protocol}://${req.get('host')}/me`;
+    await new Email(newUser, url).sendWelcome();
 
     createAndSendToken(newUser, 201, res);
 });
