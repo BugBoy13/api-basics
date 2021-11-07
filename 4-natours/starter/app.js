@@ -14,6 +14,7 @@ const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
@@ -24,6 +25,14 @@ app.set('views', path.join(__dirname, 'views'));
 // GLOBAL MIDDLEWARES
 // set security http headers
 app.use(helmet());
+
+app.use((req, res, next) => {
+    res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; font-src 'self' https://fonts.googleapis.com/ https://fonts.gstatic.com/; img-src 'self'; script-src 'self' https://*.stripe.com/ https://*.mapbox.com/; style-src 'self' https://fonts.googleapis.com/; frame-src 'self'"
+    );
+    next();
+});
 
 // development logging
 if (process.env.NODE_ENV === 'development') {
@@ -100,6 +109,7 @@ app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 app.all('*', (req, res, next) => {
     // res.status(404).json({
